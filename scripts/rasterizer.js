@@ -6,7 +6,7 @@
  *
  * This starts an HTTP server waiting for screenshot requests
  */
-var basePath = phantom.args[0] || '/tmp/'; 
+var basePath = phantom.args[0] || '/tmp/';
 
 var port  = phantom.args[1] || 3001;
 
@@ -49,8 +49,8 @@ server = require('webserver').create();
  * All settings of the WebPage object can also be set using headers, e.g.:
  * javascriptEnabled: false
  * userAgent: Mozilla/5.0 (iPhone; U; CPU like Mac OS X; en) AppleWebKit/420+
- */ 
-service = server.listen(port, function(request, response) {
+ */
+service = server.listen(port, function (request, response) {
   if (request.url == '/healthCheck') {
     response.statusCode = 200;
     response.write('up');
@@ -75,7 +75,7 @@ service = server.listen(port, function(request, response) {
     if (request.headers.clipRect) {
       page.clipRect = JSON.parse(request.headers.clipRect);
     }
-    for (name in pageSettings) {
+    for (var name in pageSettings) {
       if (value = request.headers[pageSettings[name]]) {
         value = (value == 'false') ? false : ((value == 'true') ? true : value);
         page.settings[pageSettings[name]] = value;
@@ -86,7 +86,7 @@ service = server.listen(port, function(request, response) {
     response.write('Error while parsing headers: ' + err.message);
     return response.close();
   }
-  page.open(url, function(status) {
+  page.open(url, function (status) {
     if (status == 'success') {
       window.setTimeout(function () {
         page.render(path);

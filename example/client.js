@@ -7,7 +7,7 @@ var fs   = require('fs');
 
 // create a server to receive callbacks from the screenshot service
 // and save the body to a PNG file
-http.createServer(function(req, res) {
+http.createServer(function (req, res) {
   var name = url.parse(req.url).pathname.slice(1);
   req.on('end', function () {
     res.writeHead(200);
@@ -24,10 +24,10 @@ var sites = {
 var screenshotServiceUrl = 'http://localhost:3000/'; // must be running screenshot-app
 
 // call the screenshot service using the current server as a callback
-var poller = function() {
-  for (name in sites) {
+var poller = function () {
+  for (var name in sites) {
     var options = url.parse(screenshotServiceUrl + sites[name] + '?callback=http://localhost:8124/' + name);
-    http.get(options, function(res) {});
-  };
-}
+    http.get(options, function (res) {});
+  }
+};
 setInterval(poller, 60000);
