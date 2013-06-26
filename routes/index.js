@@ -21,7 +21,8 @@ module.exports = function (app, useCors) {
 
     [
       'width', 'height', 'clipRect', 'javascriptEnabled', 'loadImages', 'delay',
-      'localToRemoteUrlAccessEnabled', 'userAgent', 'userName', 'password'
+      'localToRemoteUrlAccessEnabled', 'userAgent', 'userName', 'password',
+      'selectorBase', 'selectorStart', 'selectorEnd'
     ].forEach(function (name) {
       if (req.param(name, false)) {
         options.headers[name] = req.param(name);
@@ -39,7 +40,18 @@ module.exports = function (app, useCors) {
     var callbackUrl = req.param('callback', false) ?
       utils.url(req.param('callback')) : false;
 
-    if (fs.existsSync(filePath)) {
+    if (options.headers.selectorBase) {
+      console.log('Request for %s - Rasterizing %s frames', url,
+        options.headers.selectorBase);
+
+      processFramesUsingRasterizer(options, res, callbackUrl,
+        function (err) {
+          if (err) {
+            next(err);
+          }
+        }
+      );
+    } else if (fs.existsSync(filePath)) {
       console.log('Request for %s - Found in cache', url);
 
       processImageUsingCache(filePath, res, callbackUrl, function (err) {
@@ -47,19 +59,17 @@ module.exports = function (app, useCors) {
           next(err);
         }
       });
+    } else {
+      console.log('Request for %s - Rasterizing it', url);
 
-      return;
-    }
-
-    console.log('Request for %s - Rasterizing it', url);
-
-    processImageUsingRasterizer(options, filePath, res, callbackUrl,
-      function (err) {
-        if (err) {
-          next(err);
+      processImageUsingRasterizer(options, filePath, res, callbackUrl,
+        function (err) {
+          if (err) {
+            next(err);
+          }
         }
-      }
-    );
+      );
+    }
   });
 
   // Try redirecting to the main route
@@ -101,12 +111,26 @@ module.exports = function (app, useCors) {
     }
   };
 
+  var processFramesUsingRasterizer = function (rasterizerOptions, res, url,
+      callback) {
+    request.get(rasterizerOptions, function (error, response, body) {
+      if (error || response.statusCode != 200) {
+        console.log('Error while requesting the rasterizer: %s', error.message);
+        rasterizerService.restartService();
+        return callback(new Error(body));
+      } else {
+        // Respond with the newline-delimited, base 64 encoded images
+        res.send(response.body);
+        callback(null);
+      }
+    });
+  };
+
   var callRasterizer = function (rasterizerOptions, callback) {
     request.get(rasterizerOptions, function (error, response, body) {
       if (error || response.statusCode != 200) {
         console.log('Error while requesting the rasterizer: %s', error.message);
         rasterizerService.restartService();
-
         return callback(new Error(body));
       }
 

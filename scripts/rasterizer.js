@@ -1,3 +1,5 @@
+var webpage = require('webpage');
+
 var basePath = phantom.args[0] || '/tmp/';
 var port = phantom.args[1] || 3001;
 
@@ -27,8 +29,8 @@ var service = server.listen(port, function (request, response) {
     return;
   }
 
+  var page = webpage.create();
   var url = request.headers.url;
-  var page = new WebPage();
   var delay = request.headers.delay || 0;
   var path = basePath + (request.headers.filename || (
     url.replace(new RegExp('https?://'), '').replace(/\//g, '.') + '.png'));
@@ -44,9 +46,11 @@ var service = server.listen(port, function (request, response) {
     }
 
     for (var name in pageSettings) {
-      value = request.headers[pageSettings[name]];
-      value = (value == 'false') ? false : ((value == 'true') ? true : value);
-      page.settings[pageSettings[name]] = value;
+      // This must be an assignment (=), not a comparison (==)
+      if (value = request.headers[pageSettings[name]]) {
+        value = (value == 'false') ? false : ((value == 'true') ? true : value);
+        page.settings[pageSettings[name]] = value;
+      }
     }
   } catch (err) {
     response.statusCode = 500;
@@ -55,10 +59,39 @@ var service = server.listen(port, function (request, response) {
   }
 
   page.open(url, function (status) {
+    var getClipRect = function (page, selector) {
+      return page.evaluate(function (selector) {
+        var element = document.querySelector(selector);
+        return element === null ? '' : element.getBoundingClientRect();
+      }, selector);
+    };
+
     if (status == 'success') {
       window.setTimeout(function () {
-        page.render(path);
-        response.write('Success: Screenshot saved to ' + path + '\n');
+        var responseBody = '';
+
+        if (request.headers.selectorBase) {
+          for (var i = request.headers.selectorStart;
+              i < request.headers.selectorEnd; ++i) {
+            var clipRect = getClipRect(page, request.headers.selectorBase + i);
+
+            // Do not reassign object directly; extra values might be given
+            page.clipRect = {
+              left: clipRect.left,
+              top: clipRect.top,
+              width: clipRect.width,
+              height: clipRect.height
+            };
+
+            // Delimit the base 64 encoded images by newlines
+            responseBody += page.renderBase64('PNG') + '\n';
+          }
+        } else {
+          page.render(path);
+          responseBody = 'Success: Screenshot saved to ' + path + '\n';
+        }
+
+        response.write(responseBody);
         response.close();
         page.close();
       }, delay);
