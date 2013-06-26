@@ -1,4 +1,11 @@
-node_modules
-config/development.yaml
-config/production.yaml
+# OS X Finder
+.DS_Store
+
+# Temporary Vim files
+*.swp
+
+# Configuration
 config/runtime.json
+
+# Node packaged modules
+node_modules
