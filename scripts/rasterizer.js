@@ -46,8 +46,10 @@ var service = server.listen(port, function (request, response) {
     }
 
     for (var name in pageSettings) {
-      // This must be an assignment (=), not a comparison (==)
-      if (value = request.headers[pageSettings[name]]) {
+      value = request.headers[pageSettings[name]];
+
+      if (value) {
+        console.log(value);
         value = (value == 'false') ? false : ((value == 'true') ? true : value);
         page.settings[pageSettings[name]] = value;
       }
