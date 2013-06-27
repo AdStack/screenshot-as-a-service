@@ -32,8 +32,8 @@ var service = server.listen(port, function (request, response) {
   var page = webpage.create();
   var url = request.headers.url;
   var delay = request.headers.delay || 0;
-  var path = basePath + (request.headers.filename || (
-    url.replace(new RegExp('https?://'), '').replace(/\//g, '.') + '.png'));
+  var path = basePath + (request.headers.filename ||
+    (url.replace(new RegExp('https?://'), '').replace(/\//g, '.') + '.png'));
 
   try {
     page.viewportSize = {
@@ -57,7 +57,8 @@ var service = server.listen(port, function (request, response) {
   } catch (err) {
     response.statusCode = 500;
     response.write('Error while parsing headers: ' + err.message);
-    return response.close();
+    response.close();
+    return;
   }
 
   page.open(url, function (status) {
