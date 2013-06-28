@@ -22,7 +22,7 @@ module.exports = function (app, useCors) {
     [
       'width', 'height', 'clipRect', 'javascriptEnabled', 'loadImages', 'delay',
       'localToRemoteUrlAccessEnabled', 'userAgent', 'userName', 'password',
-      'selectorBase', 'selectorStart', 'selectorEnd'
+      'selectors'
     ].forEach(function (name) {
       if (req.param(name, false)) {
         options.headers[name] = req.param(name);
@@ -40,9 +40,8 @@ module.exports = function (app, useCors) {
     var callbackUrl = req.param('callback', false) ?
       utils.url(req.param('callback')) : false;
 
-    if (options.headers.selectorBase) {
-      console.log('Request for %s - Rasterizing %s frames', url,
-        options.headers.selectorBase);
+    if (options.headers.selectors) {
+      console.log('Request for %s - Rasterizing frames', url);
 
       processFramesUsingRasterizer(options, res, callbackUrl,
         function (err) {

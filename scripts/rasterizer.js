@@ -61,22 +61,19 @@ var service = server.listen(port, function (request, response) {
     return;
   }
 
-  page.open(url, function (status) {
-    var getClipRect = function (page, selector) {
-      return page.evaluate(function (selector) {
-        var element = document.querySelector(selector);
-        return element === null ? '' : element.getBoundingClientRect();
-      }, selector);
-    };
+  var getClipRect = function (selector) {
+    var element = document.querySelector(selector);
+    return element === null ? '' : element.getBoundingClientRect();
+  };
 
+  page.open(url, function (status) {
     if (status == 'success') {
       window.setTimeout(function () {
         var responseBody = '';
 
-        if (request.headers.selectorBase) {
-          for (var i = request.headers.selectorStart;
-              i < request.headers.selectorEnd; ++i) {
-            var clipRect = getClipRect(page, request.headers.selectorBase + i);
+        if (request.headers.selectors) {
+          JSON.parse(request.headers.selectors).forEach(function (selector) {
+            var clipRect = page.evaluate(getClipRect, selector);
 
             // Do not reassign object directly; extra values might be given
             page.clipRect = {
@@ -88,7 +85,7 @@ var service = server.listen(port, function (request, response) {
 
             // Delimit the base 64 encoded images by newlines
             responseBody += page.renderBase64('PNG') + '\n';
-          }
+          });
         } else {
           page.render(path);
           responseBody = 'Success: Screenshot saved to ' + path + '\n';
