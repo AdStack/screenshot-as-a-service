@@ -22,7 +22,7 @@ module.exports = function (app, useCors) {
     [
       'width', 'height', 'clipRect', 'javascriptEnabled', 'loadImages', 'delay',
       'localToRemoteUrlAccessEnabled', 'userAgent', 'userName', 'password',
-      'selectors'
+      'selectors', 'css'
     ].forEach(function (name) {
       if (req.param(name, false)) {
         options.headers[name] = req.param(name);

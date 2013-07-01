@@ -66,10 +66,28 @@ var service = server.listen(port, function (request, response) {
     return element === null ? '' : element.getBoundingClientRect();
   };
 
+  var injectCSS = function (css) {
+    // Create the element to be inserted
+    var styleElement = document.createElement('style');
+    styleElement.appendChild(document.createTextNode(css));
+
+    // Determine the last stylesheet link or style tag
+    var elements = document.querySelectorAll('link[rel="stylesheet"],style');
+    var last = elements[elements.length - 1];
+
+    // Insert the new style element after the last one
+    last.parentNode.insertBefore(styleElement, last.nextSibling);
+  };
+
   page.open(url, function (status) {
     if (status == 'success') {
       window.setTimeout(function () {
         var responseBody = '';
+
+        // Apply any given css prior to rendering
+        if (request.headers.css) {
+          page.evaluate(injectCSS, request.headers.css);
+        }
 
         if (request.headers.selectors) {
           JSON.parse(request.headers.selectors).forEach(function (selector) {
