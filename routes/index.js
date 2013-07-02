@@ -8,7 +8,7 @@ module.exports = function (app, useCors) {
   var rasterizerService = app.settings.rasterizerService;
   var fileCleanerService = app.settings.fileCleanerService;
 
-  app.get('/', function (req, res, next) {
+  app.all('/', function (req, res, next) {
     var url = utils.url(req.param('url'));
     var callbackUrl = req.param('callbackUrl', false) ?
       utils.url(req.param('callbackUrl')) : false;
