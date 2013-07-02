@@ -26,9 +26,8 @@ var doNothing = function (res) {};
 // Call the screenshot service
 setInterval(function () {
   for (var name in sites) {
-    var options = url.parse(
-      screenshotServiceUrl + sites[name] + '?callback=http://localhost:8124/' +
-      name);
+    var options = url.parse(screenshotServiceUrl + sites[name] +
+      '?callbackUrl=http://localhost:8124/' + name);
 
     http.get(options, doNothing);
   }

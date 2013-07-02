@@ -1,20 +1,18 @@
 var webpage = require('webpage');
+var webserver = require('webserver');
 
+var server = webserver.create();
 var basePath = phantom.args[0] || '/tmp/';
 var port = phantom.args[1] || 3001;
-
+var pageSettings = [
+  'javascriptEnabled', 'loadImages', 'localToRemoteUrlAccessEnabled',
+  'userAgent', 'userName', 'password'
+];
 var defaultViewportSize = (phantom.args[2] || '').split('x');
 defaultViewportSize = {
   width: defaultViewportSize[0] || 1024,
   height: defaultViewportSize[1] || 600
 };
-
-var pageSettings = [
-  'javascriptEnabled', 'loadImages', 'localToRemoteUrlAccessEnabled',
-  'userAgent', 'userName', 'password'
-];
-
-var server = require('webserver').create();
 
 var service = server.listen(port, function (request, response) {
   if (request.url == '/healthCheck') {
@@ -66,7 +64,7 @@ var service = server.listen(port, function (request, response) {
     return element === null ? '' : element.getBoundingClientRect();
   };
 
-  var injectCSS = function (css) {
+  var injectCss = function (css) {
     // Create the element to be inserted
     var styleElement = document.createElement('style');
     styleElement.appendChild(document.createTextNode(css));
@@ -86,7 +84,7 @@ var service = server.listen(port, function (request, response) {
 
         // Apply any given css prior to rendering
         if (request.headers.css) {
-          page.evaluate(injectCSS, request.headers.css);
+          page.evaluate(injectCss, request.headers.css);
         }
 
         if (request.headers.selectors) {

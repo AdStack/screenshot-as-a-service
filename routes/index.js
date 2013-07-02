@@ -14,8 +14,8 @@ module.exports = function (app, useCors) {
     }
 
     var url = utils.url(req.param('url'));
-    var returnUrl = req.param('returnUrl', false) ?
-      utils.url(req.param('returnUrl')) : false;
+    var callbackUrl = req.param('callbackUrl', false) ?
+      utils.url(req.param('callbackUrl')) : false;
     var options = {
       uri: 'http://localhost:' + rasterizerService.getPort() + '/',
       headers: {
@@ -43,13 +43,13 @@ module.exports = function (app, useCors) {
 
     var callback;
 
-    if (returnUrl) {
-      res.send('Will post screenshot to ' + returnUrl + ' when processed');
+    if (callbackUrl) {
+      res.send('Will post screenshot to ' + callbackUrl + ' when processed');
       callback = function (error) {
         if (error) {
           next(error);
         }
-        postImageToUrl(filePath, returnUrl, next);
+        postImageToUrl(filePath, callbackUrl, next);
       };
     } else {
       callback = function (error) {
@@ -88,8 +88,8 @@ module.exports = function (app, useCors) {
     });
   };
 
-  var postImageToUrl = function (imagePath, returnUrl, callback) {
-    console.log('Streaming image to %s', returnUrl);
+  var postImageToUrl = function (imagePath, callbackUrl, callback) {
+    console.log('Streaming image to %s', callbackUrl);
 
     var fileStream = fs.createReadStream(imagePath);
 
@@ -102,7 +102,7 @@ module.exports = function (app, useCors) {
       callback(error);
     });
 
-    fileStream.pipe(request.post(returnUrl, function (error) {
+    fileStream.pipe(request.post(callbackUrl, function (error) {
       if (error) {
         console.log('Error while streaming screenshot: %s', error);
         callback(error);

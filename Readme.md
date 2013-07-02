@@ -54,7 +54,7 @@ GET /?url=www.mysite.com&userName=johndoe&password=S3cr3t
 # Return a screenshot of a website requiring basic http authentication
 
 # Asynchronous call
-GET /?url=www.google.com&callback=http://www.myservice.com/screenshot/google
+GET /?url=www.google.com&callbackUrl=http://www.myservice.com/screenshot/google
 # Return an empty response immediately (HTTP 200 OK),
 # then send a POST request to the callback URL when the screenshot is ready
 # with the PNG image in the body.
@@ -123,7 +123,7 @@ var screenshotServiceUrl = 'http://my.screenshot.app:3000/'; // must be running 
 // call the screenshot service using the current server as a callback
 var poller = function() {
   for (name in sites) {
-    var options = url.parse(screenshotServiceUrl + sites[name] + '?callback=http://localhost:8124/' + name);
+    var options = url.parse(screenshotServiceUrl + sites[name] + '?callbackUrl=http://localhost:8124/' + name);
     http.get(options, function(res) {});
   };
 }
