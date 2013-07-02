@@ -47,7 +47,6 @@ var service = server.listen(port, function (request, response) {
       value = request.headers[pageSettings[name]];
 
       if (value) {
-        console.log(value);
         value = (value == 'false') ? false : ((value == 'true') ? true : value);
         page.settings[pageSettings[name]] = value;
       }
