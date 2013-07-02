@@ -21,6 +21,7 @@ process.on('SIGINT', function () {
 
 app.configure(function () {
   app.use(express.static(__dirname + '/public'));
+  app.use(express.bodyParser());
   app.use(app.router);
   app.set('fileCleanerService', new FileCleanerService(config.cache.lifetime));
   app.set('rasterizerService',

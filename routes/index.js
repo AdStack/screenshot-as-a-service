@@ -14,9 +14,13 @@ module.exports = function (app, useCors) {
     }
 
     var url = utils.url(req.param('url'));
+    var returnUrl = req.param('returnUrl', false) ?
+      utils.url(req.param('returnUrl')) : false;
     var options = {
       uri: 'http://localhost:' + rasterizerService.getPort() + '/',
-      headers: { url: url }
+      headers: {
+        url: url
+      }
     };
 
     [
@@ -37,108 +41,55 @@ module.exports = function (app, useCors) {
       options.headers.filename
     );
 
-    var callbackUrl = req.param('callback', false) ?
-      utils.url(req.param('callback')) : false;
+    var callback;
+
+    if (returnUrl) {
+      res.send('Will post screenshot to ' + returnUrl + ' when processed');
+      callback = function (error) {
+        if (error) {
+          next(error);
+        }
+        postImageToUrl(filePath, returnUrl, next);
+      };
+    } else {
+      callback = function (error) {
+        if (error) {
+          next(error);
+        }
+        sendImageInResponse(filePath, res, next);
+      };
+    }
 
     if (options.headers.selectors) {
       console.log('Request for %s - Rasterizing frames', url);
-
-      processFramesUsingRasterizer(options, res, callbackUrl,
-        function (err) {
-          if (err) {
-            next(err);
-          }
-        }
-      );
+      callRasterizer(options, res, callback);
     } else if (fs.existsSync(filePath)) {
       console.log('Request for %s - Found in cache', url);
-
-      processImageUsingCache(filePath, res, callbackUrl, function (err) {
-        if (err) {
-          next(err);
-        }
-      });
+      callback(null);
     } else {
       console.log('Request for %s - Rasterizing it', url);
-
-      processImageUsingRasterizer(options, filePath, res, callbackUrl,
-        function (err) {
-          if (err) {
-            next(err);
-          }
-        }
-      );
+      callRasterizer(options, null, callback);
     }
   });
 
-  // Try redirecting to the main route
-  app.get('*', function (req, res, next) {
-    res.redirect('/?url=' + req.url.substring(1));
-  });
-
-  var processImageUsingCache = function (filePath, res, url, callback) {
-    // Asynchronous if url is given
-    if (url) {
-      res.send('Will post screenshot to ' + url + ' when processed');
-      postImageToUrl(filePath, url, callback);
-    } else {
-      sendImageInResponse(filePath, res, callback);
-    }
-  };
-
-  var processImageUsingRasterizer = function (rasterizerOptions, filePath, res,
-      url, callback) {
-    // Asynchronous if url is given
-    if (url) {
-      res.send('Will post screenshot to ' + url + ' when processed');
-
-      callRasterizer(rasterizerOptions, function (error) {
-        if (error) {
-          return callback(error);
-        }
-
-        postImageToUrl(filePath, url, callback);
-      });
-    } else {
-      callRasterizer(rasterizerOptions, function (error) {
-        if (error) {
-          return callback(error);
-        }
-
-        sendImageInResponse(filePath, res, callback);
-      });
-    }
-  };
-
-  var processFramesUsingRasterizer = function (rasterizerOptions, res, url,
-      callback) {
-    request.get(rasterizerOptions, function (error, response, body) {
+  var callRasterizer = function (options, res, callback) {
+    request.get(options, function (error, response, body) {
       if (error || response.statusCode != 200) {
         console.log('Error while requesting the rasterizer: %s', error.message);
         rasterizerService.restartService();
         return callback(new Error(body));
       } else {
-        // Respond with the newline-delimited, base 64 encoded images
-        res.send(response.body);
-        callback(null);
+        if (res) {
+          res.send(response.body);
+        } else {
+          callback(null);
+        }
       }
     });
   };
 
-  var callRasterizer = function (rasterizerOptions, callback) {
-    request.get(rasterizerOptions, function (error, response, body) {
-      if (error || response.statusCode != 200) {
-        console.log('Error while requesting the rasterizer: %s', error.message);
-        rasterizerService.restartService();
-        return callback(new Error(body));
-      }
-
-      callback(null);
-    });
-  };
-
-  var postImageToUrl = function (imagePath, url, callback) {
-    console.log('Streaming image to %s', url);
+  var postImageToUrl = function (imagePath, returnUrl, callback) {
+    console.log('Streaming image to %s', returnUrl);
 
     var fileStream = fs.createReadStream(imagePath);
 
@@ -146,17 +97,16 @@ module.exports = function (app, useCors) {
       fileCleanerService.addFile(imagePath);
     });
 
-    fileStream.on('error', function (err) {
-      console.log('Error while reading file: %s', err.message);
-      callback(err);
+    fileStream.on('error', function (error) {
+      console.log('Error while reading file: %s', error.message);
+      callback(error);
     });
 
-    fileStream.pipe(request.post(url, function (err) {
-      if (err) {
-        console.log('Error while streaming screenshot: %s', err);
+    fileStream.pipe(request.post(returnUrl, function (error) {
+      if (error) {
+        console.log('Error while streaming screenshot: %s', error);
+        callback(error);
       }
-
-      callback(err);
     }));
   };
 
@@ -168,9 +118,12 @@ module.exports = function (app, useCors) {
       res.setHeader('Access-Control-Expose-Headers', 'Content-Type');
     }
 
-    res.sendfile(imagePath, function (err) {
-      fileCleanerService.addFile(imagePath);
-      callback(err);
+    res.sendfile(imagePath, function (error) {
+      if (error) {
+        callback(error);
+      } else {
+        fileCleanerService.addFile(imagePath);
+      }
     });
   };
 };
