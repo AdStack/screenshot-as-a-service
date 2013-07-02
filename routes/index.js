@@ -9,10 +9,6 @@ module.exports = function (app, useCors) {
   var fileCleanerService = app.settings.fileCleanerService;
 
   app.get('/', function (req, res, next) {
-    if (!req.param('url', false)) {
-      return res.redirect('/usage.html');
-    }
-
     var url = utils.url(req.param('url'));
     var callbackUrl = req.param('callbackUrl', false) ?
       utils.url(req.param('callbackUrl')) : false;
